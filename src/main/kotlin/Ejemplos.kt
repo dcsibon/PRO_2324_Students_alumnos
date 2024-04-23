@@ -140,6 +140,7 @@ fun Prueba2() {
     }
 }
 
+//Centrarlo en la pantalla vertical y horizontalmente...
 @Composable
 @Preview
 fun Prueba2_sol() {

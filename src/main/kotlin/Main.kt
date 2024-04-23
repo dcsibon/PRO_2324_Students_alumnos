@@ -13,6 +13,6 @@ fun main() = application {
         title = "Mi Login",
         state = windowState
     ) {
-        MainScreen3()
+        TutorialImagenes02()
     }
 }

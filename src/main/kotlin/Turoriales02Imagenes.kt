@@ -1,11 +1,9 @@
 import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.runtime.Composable
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
@@ -27,6 +25,10 @@ import org.xml.sax.InputSource
 import java.io.File
 import java.io.IOException
 import java.net.URL
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.window.Tray
+import androidx.compose.ui.window.Window
+import androidx.compose.ui.window.application
 
 @Composable
 @Preview
@@ -41,13 +43,19 @@ fun TutorialImagenes01(){
 @Composable
 fun TutorialImagenes02(){
     val density = LocalDensity.current
-    Column {
-        AsyncImage(
-            load = { loadImageBitmap(File("src\\main\\resources\\sample.png")) },
-            painterFor = { remember { BitmapPainter(it) } },
-            contentDescription = "Sample",
-            modifier = Modifier.width(200.dp)
-        )
+    Column(
+        modifier = Modifier.fillMaxSize(),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        if (File("src\\main\\resources\\sample.png").isFile) {
+            AsyncImage(
+                load = { loadImageBitmap(File("src\\main\\resources\\sample.png")) },
+                painterFor = { remember { BitmapPainter(it) } },
+                contentDescription = "Sample",
+                modifier = Modifier.width(200.dp)
+            )
+        }
         AsyncImage(
             load = { loadSvgPainter("https://github.com/JetBrains/compose-multiplatform/raw/master/artwork/idea-logo.svg", density) },
             painterFor = { it },
@@ -55,13 +63,15 @@ fun TutorialImagenes02(){
             contentScale = ContentScale.FillWidth,
             modifier = Modifier.width(200.dp)
         )
-        AsyncImage(
-            load = { loadXmlImageVector(File("src\\main\\resources\\compose-logo.xml"), density) },
-            painterFor = { rememberVectorPainter(it) },
-            contentDescription = "Compose logo",
-            contentScale = ContentScale.FillWidth,
-            modifier = Modifier.width(200.dp)
-        )
+        if (File("src\\main\\resources\\compose-logo.xml").isFile) {
+            AsyncImage(
+                load = { loadXmlImageVector(File("src\\main\\resources\\compose-logo.xml"), density) },
+                painterFor = { rememberVectorPainter(it) },
+                contentDescription = "Compose logo",
+                contentScale = ContentScale.FillWidth,
+                modifier = Modifier.width(200.dp)
+            )
+        }
     }
 }
 
@@ -137,3 +147,22 @@ private suspend fun urlStream(url: String) = HttpClient(CIO).use {
 }
 
  */
+
+fun main() = application {
+    val icon = painterResource("sample.png")
+
+    Tray(
+        icon = icon,
+        menu = {
+            Item("Quit App", onClick = ::exitApplication)
+        }
+    )
+
+    Window(onCloseRequest = ::exitApplication, icon = icon) {
+        Image(
+            painter = icon,
+            contentDescription = "Icon",
+            modifier = Modifier.fillMaxSize()
+        )
+    }
+}

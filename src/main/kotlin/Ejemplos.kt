@@ -1,13 +1,16 @@
 import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Surface
-import androidx.compose.material.Text
-import androidx.compose.runtime.Composable
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.material.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.unit.dp
 
 @Composable
@@ -147,7 +150,7 @@ fun Prueba2_sol() {
     Box(
         modifier = Modifier.fillMaxSize().background(Color.Blue),
         contentAlignment = Alignment.Center
-    ){
+    ) {
         Column(
             modifier = Modifier.background(Color.Black),
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -171,4 +174,95 @@ fun Prueba2_sol() {
             )
         }
     }
+}
+
+@Composable
+fun MainScreen4() {
+    Surface(
+        color = Color.LightGray,
+        modifier = Modifier.fillMaxSize()
+    ) {
+        StudentList()
+    }
+}
+
+@Composable
+@Preview
+fun StudentList() {
+    var newStudent by remember { mutableStateOf("") }
+    val studentsState = remember { mutableStateListOf("Juan", "Victor", "Esther", "Jaime") }
+    val focusRequester = remember { FocusRequester() }  // Crea un FocusRequester
+    //val focusManager = LocalFocusManager.current
+    val maxCharacters = 10
+
+    Row(
+        modifier = Modifier.fillMaxSize(),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.Center
+    ) {
+        Column(
+            modifier = Modifier.padding(end = 20.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            OutlinedTextField(
+                modifier = Modifier
+                    .padding(bottom = 10.dp)
+                    .focusRequester(focusRequester),
+                value = newStudent,
+                onValueChange = {
+                    if (it.length <= maxCharacters) {
+                        newStudent = it
+                    }
+                },
+                label = { Text("New student name") },
+                maxLines = 1,
+                colors = TextFieldDefaults.outlinedTextFieldColors(
+                    backgroundColor = Color.White
+                )
+            )
+            Button(
+                modifier = Modifier.padding(15.dp),
+                onClick = {
+                    if (newStudent.isNotBlank()) {
+                        studentsState.add(newStudent.trim())
+                        newStudent = ""
+                    }
+                    focusRequester.requestFocus()
+                },
+            ) {
+                Text(text = "Add new student")
+            }
+        }
+        LazyColumn(
+            modifier = Modifier.fillMaxHeight(0.5f).width(240.dp).background(Color.White).border(2.dp, Color.Black).padding(10.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            items(studentsState.size) { index ->
+                StudentText(name = studentsState[index])
+            }
+        }
+        /*
+        Column(
+            modifier = Modifier.padding(40.dp).border(2.dp, Color.Black),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            for (student in studentsState) {
+                StudentText(name = student)
+            }
+        }
+        */
+    }
+
+    LaunchedEffect(Unit) {
+        focusRequester.requestFocus()
+    }
+}
+
+@Composable
+fun StudentText(name: String) {
+    Text(
+        text = name,
+        style = MaterialTheme.typography.h5,
+        modifier = Modifier.padding(10.dp)
+    )
 }

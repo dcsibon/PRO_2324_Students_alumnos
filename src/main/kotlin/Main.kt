@@ -15,7 +15,7 @@ fun main() = application {
         icon = icon,
         state = windowState
     ) {
-        TutorialImagenes02()
+        MainScreen4()
     }
 }
 

@@ -9,9 +9,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
+import kotlinx.coroutines.delay
+import java.io.File
 
 @Composable
 @Preview
@@ -177,23 +181,37 @@ fun Prueba2_sol() {
 }
 
 @Composable
-fun MainScreen4() {
+fun MainScreen4(ficheros: IFicheros) {
     Surface(
         color = Color.LightGray,
         modifier = Modifier.fillMaxSize()
     ) {
-        StudentList()
+        StudentList(ficheros)
     }
 }
 
 @Composable
 @Preview
-fun StudentList() {
+fun StudentList(ficheros: IFicheros) {
     var newStudent by remember { mutableStateOf("") }
-    val studentsState = remember { mutableStateListOf("Juan", "Victor", "Esther", "Jaime") }
-    val focusRequester = remember { FocusRequester() }  // Crea un FocusRequester
-    //val focusManager = LocalFocusManager.current
+    val studentsState = remember { mutableStateListOf<String>() }
+    val focusRequester = remember { FocusRequester() }
     val maxCharacters = 10
+
+    var showToast by remember { mutableStateOf(false) }
+    var toastMessage by remember { mutableStateOf("") }
+
+    // Carga inicial de datos desde un archivo
+    LaunchedEffect(key1 = true) {  // key1 = true asegura que esto se ejecute solo una vez
+        val file = File("studentList.txt")
+        val loadedStudents = ficheros.leer(file)
+        if (loadedStudents != null) {
+            studentsState.addAll(loadedStudents)
+        } else {
+            toastMessage = "No se pudieron cargar los datos de los estudiantes."
+            showToast = true
+        }
+    }
 
     Row(
         modifier = Modifier.fillMaxSize(),
@@ -243,7 +261,7 @@ fun StudentList() {
         }
         /*
         Column(
-            modifier = Modifier.padding(40.dp).border(2.dp, Color.Black),
+            modifier = Modifier.fillMaxHeight(0.5f).width(240.dp).background(Color.White).border(2.dp, Color.Black).padding(10.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             for (student in studentsState) {
@@ -251,6 +269,10 @@ fun StudentList() {
             }
         }
         */
+    }
+
+    if (showToast) {
+        Toast(message = toastMessage, onDismiss = { showToast = false })
     }
 
     LaunchedEffect(Unit) {
@@ -265,4 +287,22 @@ fun StudentText(name: String) {
         style = MaterialTheme.typography.h5,
         modifier = Modifier.padding(10.dp)
     )
+}
+
+@Composable
+fun Toast(message: String, onDismiss: () -> Unit) {
+    Dialog(onCloseRequest = onDismiss) {
+        Box(
+            contentAlignment = Alignment.Center,
+            modifier = Modifier.padding(16.dp)
+        ) {
+            Text(message)
+        }
+    }
+
+    // Cierra el Toast después de 3000 milisegundos (3 segundos)
+    LaunchedEffect(Unit) {
+        delay(3000)
+        onDismiss()
+    }
 }

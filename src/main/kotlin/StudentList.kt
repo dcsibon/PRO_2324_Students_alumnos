@@ -1,7 +1,5 @@
-
 import androidx.compose.desktop.ui.tooling.preview.Preview
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
+import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.*
@@ -35,6 +33,7 @@ fun main() = application {
     // Calcular la posición para centrar la ventana
     val positionX = (screenWidth / 2 - windowWidth.value.toInt() / 2)
     val positionY = (screenHeight / 2 - windowHeight.value.toInt() / 2)
+
     val windowState = rememberWindowState(
         size = DpSize(windowWidth, windowHeight),
         position = WindowPosition(positionX.dp, positionY.dp)
@@ -47,6 +46,7 @@ fun main() = application {
         onCloseRequest = ::exitApplication,
         title = "My Students",
         icon = icon,
+        resizable = false,
         state = windowState
     ) {
         MainWindowStudents(ficheros, fichStudents)
@@ -77,6 +77,7 @@ fun StudentList(
     val focusRequester = remember { FocusRequester() }
     val maxCharacters = 10
     var toastMessage by remember { mutableStateOf("") }
+    val showImgDownStudents = (studentsState.size > 7)
 
     // Carga inicial de datos desde un archivo
     LaunchedEffect(key1 = true) {  // key1 = true asegura que esto se ejecute solo una vez
@@ -130,47 +131,68 @@ fun StudentList(
                     Text(text = "Add new student")
                 }
             }
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally
+            Row(
+                verticalAlignment = Alignment.Bottom
             ) {
-                Text(
-                    text = "Students: ${studentsState.size}",
-                    modifier = Modifier.padding(bottom = 5.dp)
-                )
-                LazyColumn(
-                    verticalArrangement = Arrangement.spacedBy(10.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    modifier = Modifier
-                        .fillMaxHeight(0.78f)
-                        .width(240.dp)
-                        .background(Color.White)
-                        .border(2.dp, Color.Black)
-                        .padding(10.dp)
-                 ) {
-                    items(studentsState.size) { index ->
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .padding(horizontal = 5.dp)
-                        ) {
-                            StudentText(
-                                name = studentsState[index],
-                                Modifier.weight(0.8f)
-                            )
-                            IconButton(
-                                modifier = Modifier.weight(0.2f),
-                                onClick = { studentsState.removeAt(index) }
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = "Students: ${studentsState.size}",
+                        modifier = Modifier.padding(bottom = 5.dp)
+                    )
+                    LazyColumn(
+                        verticalArrangement = Arrangement.spacedBy(10.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier
+                            .fillMaxHeight(0.78f)
+                            .width(240.dp)
+                            .background(Color.White)
+                            .border(2.dp, Color.Black)
+                            .padding(10.dp)
+                    ) {
+                        items(studentsState.size) { index ->
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .padding(horizontal = 5.dp)
                             ) {
-                                Icon(Icons.Default.Delete, contentDescription = "Delete student")
+                                StudentText(
+                                    name = studentsState[index],
+                                    Modifier.weight(0.8f)
+                                )
+                                IconButton(
+                                    modifier = Modifier.weight(0.2f),
+                                    onClick = { studentsState.removeAt(index) }
+                                ) {
+                                    Icon(Icons.Default.Delete, contentDescription = "Delete student")
+                                }
                             }
                         }
                     }
+                    Button(
+                        onClick = { studentsState.clear() }
+                    ) {
+                        Text("Clear all")
+                    }
                 }
-                Button(
-                    onClick = { studentsState.clear() }
-                ) {
-                    Text("Clear all")
+                if (showImgDownStudents) {
+                    ImageWithTooltip(
+                        tooltipText = "Use scroll down-up",
+                        imagePath = "up_down_arrows.png",
+                        contentDesc = "Use scroll down-up",
+                        modifierImg = Modifier
+                            .padding(start = 5.dp,bottom = 50.dp)
+                            .width(20.dp)
+                    )
+                }
+                else {
+                    Box(
+                        modifier = Modifier
+                        .padding(start = 5.dp,bottom = 50.dp)
+                        .size(25.dp)
+                    )
                 }
             }
         }
@@ -224,11 +246,37 @@ fun StudentText(name: String, modifier: Modifier) {
     )
 }
 
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+fun ImageWithTooltip(tooltipText: String, imagePath: String, contentDesc: String, modifierImg: Modifier) {
+    TooltipArea(
+        tooltip = {
+            Box(
+                modifier = Modifier
+                    .background(Color(0xFFF6F9B6))
+                    .border(1.dp, Color.Black)
+            ) {
+                Text(
+                    text = tooltipText,
+                    modifier = Modifier.padding(10.dp)
+                )
+            }
+        }
+    ) {
+        Image(
+            painter = painterResource(imagePath),
+            contentDescription = contentDesc,
+            modifier = modifierImg
+        )
+    }
+}
+
 @Composable
 fun Toast(message: String, onDismiss: () -> Unit) {
     Dialog(
         icon = painterResource("info_icon.png"),
         title = "Atención",
+        resizable = false,
         onCloseRequest = onDismiss
     ) {
         Box(
@@ -239,9 +287,9 @@ fun Toast(message: String, onDismiss: () -> Unit) {
         }
     }
 
-    // Cierra el Toast después de 3000 milisegundos (3 segundos)
+    // Cierra el Toast después de 2 segundos
     LaunchedEffect(Unit) {
-        delay(3000)
+        delay(2000)
         onDismiss()
     }
 }

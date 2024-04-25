@@ -67,6 +67,7 @@ fun LoginScreen() {
 }
 */
 
+
 @Composable
 @Preview
 fun LoginScreen() {
@@ -87,10 +88,7 @@ fun LoginScreen() {
 
             Password(password, { password = it }, passVisible) { passVisible = it }
 
-            LoginButton(buttonEnabled) {
-                user = ""
-                password = ""
-            }
+            LoginButton(buttonEnabled) { user = ""; password = "" }
         }
     }
 }

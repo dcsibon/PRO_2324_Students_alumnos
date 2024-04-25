@@ -1,3 +1,5 @@
+package studentsApp
+
 import java.io.File
 
 /**
@@ -6,7 +8,7 @@ import java.io.File
  *
  * @property consola Instancia de IEntradaSalida para mostrar mensajes de error o confirmación durante las operaciones de ficheros.
  */
-class GestionFicheros() : IFicheros {
+class FileManagement() : IFiles {
 
     /**
      * Verifica si un directorio existe en la ruta especificada.

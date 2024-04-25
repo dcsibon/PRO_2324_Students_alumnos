@@ -1,10 +1,12 @@
+package studentsApp
+
 import java.io.File
 
 /**
  * Interfaz que define operaciones de manejo de ficheros y directorios utilizados en el juego de bingo.
  * Incluye métodos para verificar existencias, escribir, leer, crear archivos y directorios.
  */
-interface IFicheros {
+interface IFiles {
 
     /**
      * Verifica si un directorio existe en la ruta especificada.

@@ -9,6 +9,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.painter.BitmapPainter
 import androidx.compose.ui.res.loadImageBitmap
 import androidx.compose.ui.res.useResource
+import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.WindowState
@@ -21,8 +22,8 @@ import androidx.compose.ui.window.rememberWindowState
  */
 fun main() = application {
     val icon = BitmapPainter(useResource("sample.png", ::loadImageBitmap))
-    val mainWindowState = rememberWindowState()
-    val secondaryWindowState = rememberWindowState()
+    val mainWindowState = rememberWindowState(size = DpSize(1000.dp, 1000.dp))
+    val secondaryWindowState = rememberWindowState(size = DpSize(800.dp, 800.dp))
     var showMainWindow by remember { mutableStateOf(true) }
     var showSecondWindow by remember { mutableStateOf(false) }
 

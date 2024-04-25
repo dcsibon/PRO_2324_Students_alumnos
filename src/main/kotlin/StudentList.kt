@@ -1,9 +1,12 @@
+
 import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -95,8 +98,8 @@ fun StudentList(
             horizontalArrangement = Arrangement.Center
         ) {
             Column(
-                modifier = Modifier.padding(end = 20.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier.padding(end = 20.dp)
             ) {
                 OutlinedTextField(
                     modifier = Modifier
@@ -127,24 +130,49 @@ fun StudentList(
                     Text(text = "Add new student")
                 }
             }
-            LazyColumn(
-                modifier = Modifier.fillMaxHeight(0.5f).width(240.dp).background(Color.White).border(2.dp, Color.Black).padding(10.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                items(studentsState.size) { index ->
-                    StudentText(name = studentsState[index])
-                }
-            }
-            /*
             Column(
-                modifier = Modifier.fillMaxHeight(0.5f).width(240.dp).background(Color.White).border(2.dp, Color.Black).padding(10.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                for (student in studentsState) {
-                    StudentText(name = student)
+                Text(
+                    text = "Students: ${studentsState.size}",
+                    modifier = Modifier.padding(bottom = 5.dp)
+                )
+                LazyColumn(
+                    verticalArrangement = Arrangement.spacedBy(10.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier
+                        .fillMaxHeight(0.78f)
+                        .width(240.dp)
+                        .background(Color.White)
+                        .border(2.dp, Color.Black)
+                        .padding(10.dp)
+                 ) {
+                    items(studentsState.size) { index ->
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(horizontal = 5.dp)
+                        ) {
+                            StudentText(
+                                name = studentsState[index],
+                                Modifier.weight(0.8f)
+                            )
+                            IconButton(
+                                modifier = Modifier.weight(0.2f),
+                                onClick = { studentsState.removeAt(index) }
+                            ) {
+                                Icon(Icons.Default.Delete, contentDescription = "Delete student")
+                            }
+                        }
+                    }
+                }
+                Button(
+                    onClick = { studentsState.clear() }
+                ) {
+                    Text("Clear all")
                 }
             }
-            */
         }
         Box(
             modifier = Modifier.fillMaxSize().weight(1f),
@@ -188,17 +216,21 @@ fun StudentList(
 }
 
 @Composable
-fun StudentText(name: String) {
+fun StudentText(name: String, modifier: Modifier) {
     Text(
         text = name,
         style = MaterialTheme.typography.h5,
-        modifier = Modifier.padding(10.dp)
+        modifier = modifier
     )
 }
 
 @Composable
 fun Toast(message: String, onDismiss: () -> Unit) {
-    Dialog(onCloseRequest = onDismiss) {
+    Dialog(
+        icon = painterResource("info_icon.png"),
+        title = "Atención",
+        onCloseRequest = onDismiss
+    ) {
         Box(
             contentAlignment = Alignment.Center,
             modifier = Modifier.fillMaxSize().padding(16.dp)

@@ -39,7 +39,7 @@ fun LoginScreen() {
                 value = password,
                 onValueChange = { password = it },
                 label = { Text("Contraseña") },
-                visualTransformation = if (passVisible) VisualTransformation.None else PasswordVisualTransformation('*'),
+                visualTransformation = if (passVisible) VisualTransformation.None else PasswordVisualTransformation(),
                 trailingIcon = {
                     IconToggleButton(
                         checked = passVisible,

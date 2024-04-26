@@ -107,7 +107,8 @@ fun StudentScreen(
     val focusRequester = remember { FocusRequester() }
     val maxCharacters = 10
     var toastMessage by remember { mutableStateOf("") }
-    val showImgScrollStudentList = (studentsState.size > 7)
+    val currentToastMessage by rememberUpdatedState(toastMessage)
+    val showImgScrollStudentList = remember { derivedStateOf { studentsState.size > 7 } }
     var selectedIndex by remember { mutableStateOf(-1) } // -1 significa que no hay selección
 
     // Carga inicial de datos desde un archivo
@@ -157,7 +158,7 @@ fun StudentScreen(
                     studentsState.clear()
                 }
                 ImageUpDownScroll(
-                    showImgScrollStudentList = showImgScrollStudentList,
+                    showImgScrollStudentList = showImgScrollStudentList.value,
                 )
             }
         }
@@ -186,7 +187,7 @@ fun StudentScreen(
     }
 
     if (toastMessage.isNotEmpty()) {
-        Toast(message = toastMessage, onDismiss = { toastMessage = "" })
+        Toast(message = currentToastMessage, onDismiss = { toastMessage = "" })
     }
 
     LaunchedEffect(Unit) {
@@ -347,7 +348,7 @@ fun ImageUpDownScroll(
         Box(
             modifier = Modifier
                 .padding(start = 5.dp, bottom = 50.dp)
-                .size(25.dp)
+                .size(20.dp)
         )
     }
 }

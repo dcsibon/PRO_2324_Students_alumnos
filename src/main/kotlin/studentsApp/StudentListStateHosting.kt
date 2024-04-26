@@ -14,10 +14,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.input.key.*
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
@@ -30,7 +31,7 @@ fun main() = application {
 
     val icon = painterResource("sample.png")
     val windowState = GetWindowState(
-        windowWidth = 1200.dp,
+        windowWidth = 800.dp,
         windowHeight = 800.dp
     )
     val fileManagement = FileManagement()
@@ -67,7 +68,6 @@ fun GetWindowState(
     )
 }
 
-
 @Composable
 fun MainWindowStudents(
     title: String,
@@ -87,7 +87,7 @@ fun MainWindowStudents(
     ) {
         MaterialTheme {
             Surface(
-                color = Color.LightGray,
+                color = colorWindowBackground,
                 modifier = Modifier.fillMaxSize()
             ) {
                 StudentScreen(fileManagement, studentsFile)
@@ -104,20 +104,27 @@ fun StudentScreen(
 ) {
     var newStudent by remember { mutableStateOf("") }
     val studentsState = remember { mutableStateListOf<String>() }
-    val focusRequester = remember { FocusRequester() }
-    val maxCharacters = 10
-    var toastMessage by remember { mutableStateOf("") }
-    val currentToastMessage by rememberUpdatedState(toastMessage)
+
+    val newStudentFocusRequester = remember { FocusRequester() }
+    val studentListFocusRequester = remember { FocusRequester() }
+
+    var infoMessage by remember { mutableStateOf("") }
+    val currentInfoMessage by rememberUpdatedState(infoMessage)
+    var showInfoMessage by remember { mutableStateOf(false) }
+
     val showImgScrollStudentList = remember { derivedStateOf { studentsState.size > 7 } }
+
     var selectedIndex by remember { mutableStateOf(-1) } // -1 significa que no hay selección
 
-    // Carga inicial de datos desde un archivo
+    val maxCharacters = 10
+
     LaunchedEffect(key1 = true) {  // key1 = true asegura que esto se ejecute solo una vez
+        // Carga inicial de datos desde un archivo
         val loadedStudents = fileManagement.leer(studentsFile)
         if (loadedStudents != null) {
             studentsState.addAll(loadedStudents)
         } else {
-            toastMessage = "No se pudieron cargar los datos de los estudiantes."
+            infoMessage = "No se pudieron cargar los datos de los estudiantes."
         }
     }
 
@@ -131,7 +138,7 @@ fun StudentScreen(
         ) {
             AddNewStudent(
                 newStudent = newStudent,
-                focusRequester = focusRequester,
+                focusRequester = newStudentFocusRequester,
                 onNewStudentChange = {
                     if (it.length <= maxCharacters) {
                         newStudent = it
@@ -142,7 +149,7 @@ fun StudentScreen(
                         studentsState.add(newStudent.trim())
                         newStudent = ""
                     }
-                    focusRequester.requestFocus()
+                    newStudentFocusRequester.requestFocus()
                 }
             )
             Row(
@@ -151,7 +158,7 @@ fun StudentScreen(
                 StudentList(
                     studentsState = studentsState,
                     selectedIndex = selectedIndex,
-                    focusRequester = focusRequester,
+                    focusRequester = studentListFocusRequester,
                     onStudentSelected = { index -> selectedIndex = index },
                     onIconDeleteStudentClick = { studentsState.removeAt(it) }
                 ) {
@@ -175,23 +182,41 @@ fun StudentScreen(
                         }
                     }
                     if (error.isNotEmpty()) {
-                        toastMessage = error
+                        infoMessage = error
                     } else {
-                        toastMessage = "Fichero guardado correctamente"
+                        infoMessage = "Fichero guardado correctamente"
                     }
                 } else {
-                    toastMessage = "No se pudo generar el fichero studentList.txt"
+                    infoMessage = "No se pudo generar el fichero studentList.txt"
                 }
             }
         )
     }
 
-    if (toastMessage.isNotEmpty()) {
-        Toast(message = currentToastMessage, onDismiss = { toastMessage = "" })
+    if (showInfoMessage) {
+        InfoMessage(
+            message = currentInfoMessage,
+            onDismiss = {
+                infoMessage = ""
+                showInfoMessage = false
+            }
+        )
     }
 
-    LaunchedEffect(Unit) {
-        focusRequester.requestFocus()
+    // Solicitar el foco solo cuando cambia el tamaño de la lista
+    LaunchedEffect(studentsState.size) {
+        newStudentFocusRequester.requestFocus()
+    }
+
+    // Monitoriza infoMessage para mostrar y ocultar automáticamente el mensaje
+    LaunchedEffect(infoMessage) {
+        if (infoMessage.isNotEmpty()) {
+            showInfoMessage = true
+            delay(2000)
+            showInfoMessage = false
+            infoMessage = ""
+            newStudentFocusRequester.requestFocus()
+        }
     }
 }
 
@@ -216,24 +241,54 @@ fun AddNewStudent(
                 }
             }
     ) {
-        OutlinedTextField(
-            modifier = Modifier
-                .padding(bottom = 10.dp)
-                .focusRequester(focusRequester),
-            value = newStudent,
-            onValueChange = onNewStudentChange,
-            label = { Text("New student name") },
-            maxLines = 1,
-            colors = TextFieldDefaults.outlinedTextFieldColors(
-                backgroundColor = Color.White
-            )
+        StudentTextField(
+            newStudent = newStudent,
+            focusRequester = focusRequester,
+            onNewStudentChange = onNewStudentChange
         )
-        Button(
-            modifier = Modifier.padding(15.dp),
-            onClick = onButtonAddNewStudentClick,
-        ) {
-            Text(text = "Add new student")
-        }
+        AddStudentButton(
+            onButtonAddNewStudentClick = onButtonAddNewStudentClick
+        )
+    }
+}
+
+@Composable
+fun StudentTextField(
+    newStudent: String,
+    focusRequester: FocusRequester,
+    onNewStudentChange: (String) -> Unit,
+) {
+    OutlinedTextField(
+        modifier = Modifier
+            .padding(bottom = 10.dp)
+            .focusRequester(focusRequester),
+        value = newStudent,
+        onValueChange = onNewStudentChange,
+        label = {
+            Row(verticalAlignment = Alignment.CenterVertically){
+                Text(text = "New student name ")
+                Text(
+                    text = "(10 chars max.)",
+                    style = TextStyle(fontStyle = FontStyle.Italic)
+                )
+            }
+        },
+        maxLines = 1,
+        colors = TextFieldDefaults.outlinedTextFieldColors(
+            backgroundColor = colorFocusComponentsBackground
+        )
+    )
+}
+
+@Composable
+fun AddStudentButton(
+    onButtonAddNewStudentClick: () -> Unit,
+) {
+    Button(
+        modifier = Modifier.padding(15.dp),
+        onClick = onButtonAddNewStudentClick,
+    ) {
+        Text(text = "Add new student")
     }
 }
 
@@ -260,8 +315,8 @@ fun StudentList(
             modifier = Modifier
                 .fillMaxHeight(0.78f)
                 .width(240.dp)
-                .background(Color.White)
-                .border(2.dp, Color.Black)
+                .background(colorFocusComponentsBackground)
+                .border(2.dp, colorBorder)
                 .padding(10.dp)
                 .focusRequester(focusRequester)
                 .focusable()
@@ -279,12 +334,14 @@ fun StudentList(
                                     true
                                 } else false
                             }
+
                             Key.DirectionDown -> {
                                 if (selectedIndex < studentsState.size - 1) {
                                     onStudentSelected(selectedIndex + 1)
                                     true
                                 } else false
                             }
+
                             else -> false
                         }
                     } else {
@@ -360,8 +417,8 @@ fun ImageWithTooltip(tooltipText: String, imagePath: String, contentDesc: String
         tooltip = {
             Box(
                 modifier = Modifier
-                    .background(Color(0xFFF6F9B6))
-                    .border(1.dp, Color.Black)
+                    .background(colorTooltipBackground)
+                    .border(1.dp, colorBorder)
             ) {
                 Text(
                     text = tooltipText,
@@ -396,7 +453,7 @@ fun SaveChangesButton(
 }
 
 @Composable
-fun Toast(message: String, onDismiss: () -> Unit) {
+fun InfoMessage(message: String, onDismiss: () -> Unit) {
     Dialog(
         icon = painterResource("info_icon.png"),
         title = "Atención",
@@ -409,11 +466,5 @@ fun Toast(message: String, onDismiss: () -> Unit) {
         ) {
             Text(message)
         }
-    }
-
-    // Cierra el Toast después de 2 segundos
-    LaunchedEffect(Unit) {
-        delay(2000)
-        onDismiss()
     }
 }

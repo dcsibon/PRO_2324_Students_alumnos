@@ -1,12 +1,8 @@
-package studentsApp
-
 import java.io.File
 
 /**
- * Implementación concreta de la interfaz IFicheros para manejar ficheros de texto.
+ * Implementación concreta de la interfaz IFiles para manejar ficheros de texto.
  * Provee funcionalidades para operar con ficheros y directorios, específicamente para el formato de texto.
- *
- * @property consola Instancia de IEntradaSalida para mostrar mensajes de error o confirmación durante las operaciones de ficheros.
  */
 class FileManagement() : IFiles {
 
@@ -14,7 +10,7 @@ class FileManagement() : IFiles {
      * Verifica si un directorio existe en la ruta especificada.
      *
      * @param ruta La ruta del directorio a verificar.
-     * @return Verdadero si el directorio existe, falso de lo contrario.
+     * @return La cadena vacía si el directorio existe, el mensaje de error en caso contrario.
      */
     override fun existeDir(ruta: String): String {
         try {
@@ -31,7 +27,7 @@ class FileManagement() : IFiles {
      * Verifica si un archivo existe en la ruta especificada.
      *
      * @param ruta La ruta del archivo a verificar.
-     * @return Verdadero si el archivo existe, falso de lo contrario.
+     * @return La cadena vacía si el archivo existe, el mensaje de error en caso contrario.
      */
     override fun existeFic(ruta: String): String {
         try {
@@ -49,7 +45,7 @@ class FileManagement() : IFiles {
      *
      * @param fichero El fichero en el que se desea escribir.
      * @param info La información a escribir en el fichero.
-     * @return Verdadero si la escritura fue exitosa, falso de lo contrario.
+     * @return La cadena vacía si la escritura fue exitosa, el mensaje de error en caso contrario.
      */
     override fun escribir(fichero: File, info: String): String {
         try {
@@ -80,7 +76,7 @@ class FileManagement() : IFiles {
      * Crea un directorio en la ruta especificada.
      *
      * @param ruta La ruta donde se desea crear el directorio.
-     * @return Verdadero si la creación fue exitosa, falso si el directorio ya existe o si la creación falló.
+     * @return La cadena vacía si la creación fue exitosa, el mensaje de error si el directorio ya existe o si la creación falló.
      */
     override fun crearDir(ruta: String): String {
         val dirRuta = File(ruta)

@@ -1,5 +1,3 @@
-package studentsApp
-
 import java.io.File
 
 /**

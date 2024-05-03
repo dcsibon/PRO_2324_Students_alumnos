@@ -1,5 +1,4 @@
-package studentsApp
-
+import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -22,24 +21,36 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.*
+import kotlinx.coroutines.delay
 import java.awt.Toolkit
 import java.io.File
 
-fun main() = application {
-
-    val icon = painterResource("sample.png")
-    val windowState = GetWindowState(
-        windowWidth = 800.dp,
-        windowHeight = 800.dp
-    )
-
-    MainWindowStudents(
-        title = "My Students",
+@Composable
+fun MainWindowStudents(
+    title: String,
+    icon: Painter,
+    windowState: WindowState,
+    resizable: Boolean,
+    fileManagement: IFiles,
+    studentsFile: File,
+    onCloseMainWindow: () -> Unit,
+) {
+    Window(
+        onCloseRequest = onCloseMainWindow,
+        title = title,
         icon = icon,
-        windowState = windowState,
-        resizable = false,
-        onCloseMainWindow = { exitApplication() }
-    )
+        resizable = resizable,
+        state = windowState
+    ) {
+        MaterialTheme {
+            Surface(
+                color = colorWindowBackground,
+                modifier = Modifier.fillMaxSize()
+            ) {
+                StudentScreen(fileManagement, studentsFile)
+            }
+        }
+    }
 }
 
 @Composable
@@ -63,57 +74,36 @@ fun GetWindowState(
 }
 
 @Composable
-fun MainWindowStudents(
-    title: String,
-    icon: Painter,
-    windowState: WindowState,
-    resizable: Boolean,
-    onCloseMainWindow: () -> Unit,
-) {
-    Window(
-        onCloseRequest = onCloseMainWindow,
-        title = title,
-        icon = icon,
-        resizable = resizable,
-        state = windowState
-    ) {
-
-        val fileManagement = FileManagement()
-        val studentsFile = File("studentList.txt")
-        val studentsViewModel = StudentsViewModel(fileManagement, studentsFile)
-
-        MaterialTheme {
-            Surface(
-                color = colorWindowBackground,
-                modifier = Modifier.fillMaxSize()
-            ) {
-                StudentScreen(studentsViewModel)
-            }
-        }
-    }
-}
-
-@Composable
+@Preview
 fun StudentScreen(
-    viewModel : StudentsViewModel
+    fileManagement: IFiles,
+    studentsFile: File,
 ) {
-    val newStudent by viewModel.newStudent
-    val students = viewModel.students
+    val maxCharacters = 10
+    val maxNumStudentsVisible = 7
+
+    val (newStudent, setNewStudent) = remember { mutableStateOf("") }
+    val studentsState = remember { mutableStateListOf<String>() }
 
     val newStudentFocusRequester = remember { FocusRequester() }
     val studentListFocusRequester = remember { FocusRequester() }
 
-    val infoMessage by viewModel.infoMessage
-    val showInfoMessage by viewModel.showInfoMessage
+    val (infoMessage, setInfoMessage) = remember { mutableStateOf("") }
+    val (showInfoMessage, setShowInfoMessage) = remember { mutableStateOf(false) }
 
-    val showScrollStudentListImage = remember {
-        derivedStateOf { viewModel.shouldShowScrollStudentListImage() }
-    }
+    val showImgScrollStudentList = remember { derivedStateOf { studentsState.size > maxNumStudentsVisible } }
 
-    val selectedIndex by viewModel.selectedIndex
+    val (selectedIndex, setSelectedIndex) = remember { mutableStateOf(-1) } // -1 significa que no hay selección
 
     LaunchedEffect(key1 = true) {  // key1 = true asegura que esto se ejecute solo una vez
-        viewModel.loadStudents()
+        // Carga inicial de datos desde un archivo
+        val loadedStudents = fileManagement.leer(studentsFile)
+        if (loadedStudents != null) {
+            studentsState.addAll(loadedStudents)
+        } else {
+            setInfoMessage("No se pudieron cargar los datos de los estudiantes.")
+            setShowInfoMessage(true)
+        }
     }
 
     Column(
@@ -127,9 +117,16 @@ fun StudentScreen(
             AddNewStudent(
                 newStudent = newStudent,
                 focusRequester = newStudentFocusRequester,
-                onNewStudentChange = { name -> viewModel.newStudentChange(name) },
+                onNewStudentChange = {
+                    if (it.length <= maxCharacters) {
+                        setNewStudent(it)
+                    }
+                },
                 onButtonAddNewStudentClick = {
-                    viewModel.addStudent()
+                    if (newStudent.isNotBlank()) {
+                        studentsState.add(newStudent.trim())
+                        setNewStudent("")
+                    }
                     newStudentFocusRequester.requestFocus()
                 }
             )
@@ -137,34 +134,69 @@ fun StudentScreen(
                 verticalAlignment = Alignment.Bottom
             ) {
                 StudentList(
-                    studentsState = students,
+                    studentsState = studentsState,
                     selectedIndex = selectedIndex,
                     focusRequester = studentListFocusRequester,
-                    onStudentSelected = { index -> viewModel.studentSelected(index) },
-                    onIconDeleteStudentClick = { index -> viewModel.removeStudent(index) },
-                    onButtonClearStudentsClick = { viewModel.clearStudents() }
-                )
+                    onStudentSelected = { index -> setSelectedIndex(index) },
+                    onIconDeleteStudentClick = { studentsState.removeAt(it) }
+                ) {
+                    studentsState.clear()
+                }
                 ImageUpDownScroll(
-                    showImgScrollStudentList = showScrollStudentListImage.value,
+                    showImgScrollStudentList = showImgScrollStudentList.value,
                 )
             }
         }
         SaveChangesButton(
             modifier = Modifier.fillMaxSize().weight(1f),
-            onButtonSaveChangesClick = { viewModel.saveStudents() }
+            onButtonSaveChangesClick = {
+                var error = ""
+                val newStudentsFile = fileManagement.crearFic(studentsFile.absolutePath)
+                if (newStudentsFile != null) {
+                    for (student in studentsState) {
+                        error = fileManagement.escribir(studentsFile, "$student\n")
+                        if (error.isNotEmpty()) {
+                            break
+                        }
+                    }
+                    if (error.isNotEmpty()) {
+                        setInfoMessage(error)
+                    } else {
+                        setInfoMessage("Fichero guardado correctamente")
+                    }
+                } else {
+                    setInfoMessage("No se pudo generar el fichero studentList.txt")
+                }
+                setShowInfoMessage(true)
+            }
         )
     }
 
+    // Gestión de la visibilidad del mensaje informativo
     if (showInfoMessage) {
         InfoMessage(
             message = infoMessage,
-            onDismiss = { viewModel.showInfoMessage(false) }
+            onDismiss = {
+                setShowInfoMessage(false)
+                setInfoMessage("")
+                newStudentFocusRequester.requestFocus()
+            }
         )
     }
 
     // Solicitar el foco solo cuando cambia el tamaño de la lista
-    LaunchedEffect(students.size) {
+    LaunchedEffect(studentsState.size) {
         newStudentFocusRequester.requestFocus()
+    }
+
+    // Automáticamente oculta el mensaje después de un retraso
+    LaunchedEffect(showInfoMessage) {
+        if (showInfoMessage) {
+            delay(2000)
+            setShowInfoMessage(false)
+            setInfoMessage("")
+            newStudentFocusRequester.requestFocus()
+        }
     }
 }
 
@@ -180,8 +212,8 @@ fun AddNewStudent(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier
             .padding(end = 20.dp)
-            .onKeyEvent { event: KeyEvent ->
-                if (event.key == Key.Enter) {
+            .onKeyEvent { event ->
+                if (event.type == KeyEventType.KeyUp && event.key == Key.Enter) {
                     onButtonAddNewStudentClick()
                     true // Consumimos el evento
                 } else {
@@ -282,18 +314,16 @@ fun StudentList(
                                     true
                                 } else false
                             }
-
                             Key.DirectionDown -> {
                                 if (selectedIndex < studentsState.size - 1) {
                                     onStudentSelected(selectedIndex + 1)
                                     true
                                 } else false
                             }
-
-                            else -> false
+                            else -> false //No consumir si es otra tecla diferente
                         }
                     } else {
-                        false//Solo manejar cuando la tecla se haya levantado de la presión
+                        false //Solo manejar cuando la tecla se haya levantado de la presión
                     }
                 }
         ) {
@@ -319,6 +349,7 @@ fun StudentList(
                 }
             }
         }
+
         Button(
             onClick = onButtonClearStudentsClick
         ) {

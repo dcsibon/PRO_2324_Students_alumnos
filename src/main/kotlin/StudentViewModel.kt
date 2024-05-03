@@ -76,7 +76,7 @@ class StudentViewModel(
         _students.clear()
     }
 
-    override fun shouldShowScrollStudentListImage() = _students.size > MAXNUMSTUDENTSVISIBLE
+    override fun showScrollStudentListImage() = _students.size > MAXNUMSTUDENTSVISIBLE
 
     override fun newStudentChange(name: String) {
         if (name.length <= MAXCHARACTERS) {

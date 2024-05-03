@@ -78,20 +78,8 @@ fun GetWindowState(
 fun StudentScreen(
     viewModel : IStudentViewModel
 ) {
-    val newStudent by viewModel.newStudent
-    val students = viewModel.students
-
     val newStudentFocusRequester = remember { FocusRequester() }
     val studentListFocusRequester = remember { FocusRequester() }
-
-    val infoMessage by viewModel.infoMessage
-    val showInfoMessage by viewModel.showInfoMessage
-
-    val showScrollStudentListImage = remember {
-        derivedStateOf { viewModel.shouldShowScrollStudentListImage() }
-    }
-
-    val selectedIndex by viewModel.selectedIndex
 
     LaunchedEffect(key1 = true) {  // key1 = true asegura que esto se ejecute solo una vez
         viewModel.loadStudents()
@@ -106,7 +94,7 @@ fun StudentScreen(
             horizontalArrangement = Arrangement.Center
         ) {
             AddNewStudent(
-                newStudent = newStudent,
+                newStudent = viewModel.newStudent.value,
                 focusRequester = newStudentFocusRequester,
                 onNewStudentChange = { name -> viewModel.newStudentChange(name) },
                 onButtonAddNewStudentClick = {
@@ -118,15 +106,15 @@ fun StudentScreen(
                 verticalAlignment = Alignment.Bottom
             ) {
                 StudentList(
-                    studentsState = students,
-                    selectedIndex = selectedIndex,
+                    studentsState = viewModel.students,
+                    selectedIndex = viewModel.selectedIndex.value,
                     focusRequester = studentListFocusRequester,
                     onStudentSelected = { index -> viewModel.studentSelected(index) },
                     onIconDeleteStudentClick = { index -> viewModel.removeStudent(index) },
                     onButtonClearStudentsClick = { viewModel.clearStudents() }
                 )
                 ImageUpDownScroll(
-                    showImgScrollStudentList = showScrollStudentListImage.value,
+                    showImgScrollStudentList = viewModel.showScrollStudentListImage(),
                 )
             }
         }
@@ -139,9 +127,9 @@ fun StudentScreen(
         )
     }
 
-    if (showInfoMessage) {
+    if (viewModel.showInfoMessage.value) {
         InfoMessage(
-            message = infoMessage,
+            message = viewModel.infoMessage.value,
             onCloseInfoMessage = {
                 viewModel.showInfoMessage(false)
                 newStudentFocusRequester.requestFocus()
@@ -150,7 +138,7 @@ fun StudentScreen(
     }
 
     // Solicitar el foco solo cuando cambia el tamaño de la lista
-    LaunchedEffect(students.size) {
+    LaunchedEffect(viewModel.students.size) {
         newStudentFocusRequester.requestFocus()
     }
 }

@@ -12,7 +12,7 @@ interface IStudentViewModel {
     fun loadStudents()
     fun saveStudents()
     fun clearStudents()
-    fun shouldShowScrollStudentListImage(): Boolean
+    fun showScrollStudentListImage(): Boolean
     fun newStudentChange(name: String)
     fun studentSelected(index: Int)
     fun showInfoMessage(show: Boolean)

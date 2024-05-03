@@ -26,13 +26,11 @@ import java.awt.Toolkit
 import java.io.File
 
 @Composable
-fun MainWindowStudents(
+fun StudentWindow(
     title: String,
     icon: Painter,
     windowState: WindowState,
     resizable: Boolean,
-    fileManagement: IFiles,
-    studentsFile: File,
     onCloseMainWindow: () -> Unit,
 ) {
     Window(
@@ -42,12 +40,17 @@ fun MainWindowStudents(
         resizable = resizable,
         state = windowState
     ) {
+
+        val fileManagement = FileManagement()
+        val studentsFile = File("studentList.txt")
+        val studentViewModel = StudentViewModel(fileManagement, studentsFile)
+
         MaterialTheme {
             Surface(
                 color = colorWindowBackground,
                 modifier = Modifier.fillMaxSize()
             ) {
-                StudentScreen(fileManagement, studentsFile)
+                StudentScreen(studentViewModel)
             }
         }
     }
@@ -74,36 +77,26 @@ fun GetWindowState(
 }
 
 @Composable
-@Preview
 fun StudentScreen(
-    fileManagement: IFiles,
-    studentsFile: File,
+    viewModel : IStudentViewModel
 ) {
-    val maxCharacters = 10
-    val maxNumStudentsVisible = 7
-
-    val (newStudent, setNewStudent) = remember { mutableStateOf("") }
-    val studentsState = remember { mutableStateListOf<String>() }
+    val newStudent by viewModel.newStudent
+    val students = viewModel.students
 
     val newStudentFocusRequester = remember { FocusRequester() }
     val studentListFocusRequester = remember { FocusRequester() }
 
-    val (infoMessage, setInfoMessage) = remember { mutableStateOf("") }
-    val (showInfoMessage, setShowInfoMessage) = remember { mutableStateOf(false) }
+    val infoMessage by viewModel.infoMessage
+    val showInfoMessage by viewModel.showInfoMessage
 
-    val showImgScrollStudentList = remember { derivedStateOf { studentsState.size > maxNumStudentsVisible } }
+    val showScrollStudentListImage = remember {
+        derivedStateOf { viewModel.shouldShowScrollStudentListImage() }
+    }
 
-    val (selectedIndex, setSelectedIndex) = remember { mutableStateOf(-1) } // -1 significa que no hay selección
+    val selectedIndex by viewModel.selectedIndex
 
     LaunchedEffect(key1 = true) {  // key1 = true asegura que esto se ejecute solo una vez
-        // Carga inicial de datos desde un archivo
-        val loadedStudents = fileManagement.leer(studentsFile)
-        if (loadedStudents != null) {
-            studentsState.addAll(loadedStudents)
-        } else {
-            setInfoMessage("No se pudieron cargar los datos de los estudiantes.")
-            setShowInfoMessage(true)
-        }
+        viewModel.loadStudents()
     }
 
     Column(
@@ -117,16 +110,9 @@ fun StudentScreen(
             AddNewStudent(
                 newStudent = newStudent,
                 focusRequester = newStudentFocusRequester,
-                onNewStudentChange = {
-                    if (it.length <= maxCharacters) {
-                        setNewStudent(it)
-                    }
-                },
+                onNewStudentChange = { name -> viewModel.newStudentChange(name) },
                 onButtonAddNewStudentClick = {
-                    if (newStudent.isNotBlank()) {
-                        studentsState.add(newStudent.trim())
-                        setNewStudent("")
-                    }
+                    viewModel.addStudent()
                     newStudentFocusRequester.requestFocus()
                 }
             )
@@ -134,69 +120,40 @@ fun StudentScreen(
                 verticalAlignment = Alignment.Bottom
             ) {
                 StudentList(
-                    studentsState = studentsState,
+                    studentsState = students,
                     selectedIndex = selectedIndex,
                     focusRequester = studentListFocusRequester,
-                    onStudentSelected = { index -> setSelectedIndex(index) },
-                    onIconDeleteStudentClick = { studentsState.removeAt(it) }
-                ) {
-                    studentsState.clear()
-                }
+                    onStudentSelected = { index -> viewModel.studentSelected(index) },
+                    onIconDeleteStudentClick = { index -> viewModel.removeStudent(index) },
+                    onButtonClearStudentsClick = { viewModel.clearStudents() }
+                )
                 ImageUpDownScroll(
-                    showImgScrollStudentList = showImgScrollStudentList.value,
+                    showImgScrollStudentList = showScrollStudentListImage.value,
                 )
             }
         }
         SaveChangesButton(
             modifier = Modifier.fillMaxSize().weight(1f),
             onButtonSaveChangesClick = {
-                var error = ""
-                val newStudentsFile = fileManagement.crearFic(studentsFile.absolutePath)
-                if (newStudentsFile != null) {
-                    for (student in studentsState) {
-                        error = fileManagement.escribir(studentsFile, "$student\n")
-                        if (error.isNotEmpty()) {
-                            break
-                        }
-                    }
-                    if (error.isNotEmpty()) {
-                        setInfoMessage(error)
-                    } else {
-                        setInfoMessage("Fichero guardado correctamente")
-                    }
-                } else {
-                    setInfoMessage("No se pudo generar el fichero studentList.txt")
-                }
-                setShowInfoMessage(true)
+                viewModel.saveStudents()
+                newStudentFocusRequester.requestFocus()
             }
         )
     }
 
-    // Gestión de la visibilidad del mensaje informativo
     if (showInfoMessage) {
         InfoMessage(
             message = infoMessage,
             onDismiss = {
-                setShowInfoMessage(false)
-                setInfoMessage("")
+                viewModel.showInfoMessage(false)
                 newStudentFocusRequester.requestFocus()
             }
         )
     }
 
     // Solicitar el foco solo cuando cambia el tamaño de la lista
-    LaunchedEffect(studentsState.size) {
+    LaunchedEffect(students.size) {
         newStudentFocusRequester.requestFocus()
-    }
-
-    // Automáticamente oculta el mensaje después de un retraso
-    LaunchedEffect(showInfoMessage) {
-        if (showInfoMessage) {
-            delay(2000)
-            setShowInfoMessage(false)
-            setInfoMessage("")
-            newStudentFocusRequester.requestFocus()
-        }
     }
 }
 
@@ -212,8 +169,8 @@ fun AddNewStudent(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier
             .padding(end = 20.dp)
-            .onKeyEvent { event ->
-                if (event.type == KeyEventType.KeyUp && event.key == Key.Enter) {
+            .onKeyEvent { event: KeyEvent ->
+                if (event.key == Key.Enter) {
                     onButtonAddNewStudentClick()
                     true // Consumimos el evento
                 } else {
@@ -306,7 +263,7 @@ fun StudentList(
                     }
                 }
                 .onKeyEvent { event ->
-                    if (event.type == KeyEventType.KeyUp) {
+                    if (event.type == KeyEventType.KeyDown) {
                         when (event.key) {
                             Key.DirectionUp -> {
                                 if (selectedIndex > 0) {
@@ -314,16 +271,18 @@ fun StudentList(
                                     true
                                 } else false
                             }
+
                             Key.DirectionDown -> {
                                 if (selectedIndex < studentsState.size - 1) {
                                     onStudentSelected(selectedIndex + 1)
                                     true
                                 } else false
                             }
-                            else -> false //No consumir si es otra tecla diferente
+
+                            else -> false
                         }
                     } else {
-                        false //Solo manejar cuando la tecla se haya levantado de la presión
+                        false//Solo manejar cuando la tecla se haya levantado de la presión
                     }
                 }
         ) {
@@ -349,7 +308,6 @@ fun StudentList(
                 }
             }
         }
-
         Button(
             onClick = onButtonClearStudentsClick
         ) {

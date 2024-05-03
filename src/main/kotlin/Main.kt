@@ -11,16 +11,12 @@ fun main() = application {
         windowWidth = 800.dp,
         windowHeight = 800.dp
     )
-    val fileManagement = FileManagement()
-    val studentsFile = File("studentList.txt")
 
-    MainWindowStudents(
+    StudentWindow(
         title = "My Students",
         icon = icon,
         windowState = windowState,
         resizable = false,
-        fileManagement = fileManagement,
-        studentsFile = studentsFile,
         onCloseMainWindow = { exitApplication() }
     )
 }

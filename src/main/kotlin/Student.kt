@@ -169,13 +169,11 @@ fun AddNewStudent(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier
             .padding(end = 20.dp)
-            .onKeyEvent { event: KeyEvent ->
-                if (event.key == Key.Enter) {
-                    onButtonAddNewStudentClick()
-                    true // Consumimos el evento
-                } else {
-                    false // No consumimos el evento
-                }
+            .onKeyEvent { event ->
+                controlKeyEnter(
+                    event = event,
+                    onButtonAddNewStudentClick = { onButtonAddNewStudentClick() }
+                )
             }
     ) {
         StudentTextField(
@@ -263,27 +261,12 @@ fun StudentList(
                     }
                 }
                 .onKeyEvent { event ->
-                    if (event.type == KeyEventType.KeyDown) {
-                        when (event.key) {
-                            Key.DirectionUp -> {
-                                if (selectedIndex > 0) {
-                                    onStudentSelected(selectedIndex - 1)
-                                    true
-                                } else false
-                            }
-
-                            Key.DirectionDown -> {
-                                if (selectedIndex < studentsState.size - 1) {
-                                    onStudentSelected(selectedIndex + 1)
-                                    true
-                                } else false
-                            }
-
-                            else -> false
-                        }
-                    } else {
-                        false//Solo manejar cuando la tecla se haya levantado de la presión
-                    }
+                    selectRowScrolling(
+                        event = event,
+                        selectedIndex = selectedIndex,
+                        maxRow = studentsState.size - 1,
+                        onStudentSelected = { onStudentSelected(it) }
+                    )
                 }
         ) {
             items(studentsState.size) { index ->
@@ -403,5 +386,48 @@ fun InfoMessage(message: String, onDismiss: () -> Unit) {
         ) {
             Text(message)
         }
+    }
+}
+
+@OptIn(ExperimentalComposeUiApi::class)
+fun selectRowScrolling(
+    event: KeyEvent,
+    selectedIndex: Int,
+    maxRow: Int,
+    onStudentSelected: (Int) -> Unit
+) : Boolean {
+    return if (event.type == KeyEventType.KeyDown) {
+        when (event.key) {
+            Key.DirectionUp -> {
+                if (selectedIndex > 0) {
+                    onStudentSelected(selectedIndex - 1)
+                    true
+                } else false//No consumimos el evento
+            }
+
+            Key.DirectionDown -> {
+                if (selectedIndex < maxRow) {
+                    onStudentSelected(selectedIndex + 1)
+                    true
+                } else false//No consumimos el evento
+            }
+
+            else -> false//No consumimos el evento
+        }
+    } else {
+        false//Solo manejar cuando la tecla se haya levantado de la presión
+    }
+}
+
+@OptIn(ExperimentalComposeUiApi::class)
+fun controlKeyEnter(
+    event: KeyEvent,
+    onButtonAddNewStudentClick: () -> Unit
+) : Boolean {
+    return if (event.type == KeyEventType.KeyDown && event.key == Key.Enter) {
+        onButtonAddNewStudentClick()
+        true // Consumimos el evento
+    } else {
+        false // No consumimos el evento
     }
 }

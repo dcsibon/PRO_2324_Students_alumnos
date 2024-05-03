@@ -1,4 +1,3 @@
-import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -21,7 +20,6 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.*
-import kotlinx.coroutines.delay
 import java.awt.Toolkit
 import java.io.File
 
@@ -144,7 +142,7 @@ fun StudentScreen(
     if (showInfoMessage) {
         InfoMessage(
             message = infoMessage,
-            onDismiss = {
+            onCloseInfoMessage = {
                 viewModel.showInfoMessage(false)
                 newStudentFocusRequester.requestFocus()
             }
@@ -373,12 +371,12 @@ fun SaveChangesButton(
 }
 
 @Composable
-fun InfoMessage(message: String, onDismiss: () -> Unit) {
+fun InfoMessage(message: String, onCloseInfoMessage: () -> Unit) {
     Dialog(
         icon = painterResource("info_icon.png"),
         title = "Atención",
         resizable = false,
-        onCloseRequest = onDismiss
+        onCloseRequest = onCloseInfoMessage
     ) {
         Box(
             contentAlignment = Alignment.Center,
